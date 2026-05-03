@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Admin Dashboard</h1>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5>Total Users</h5>
+                    <h2>{{ total_users }}</h2>
+                    <small>{{ total_producers }} Producers | {{ total_customers }} Customers</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Total Orders</h5>
+                    <h2>{{ total_orders }}</h2>
+                    <small>{{ pending_orders }} Pending</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>Total Revenue</h5>
+                    <h2>£{{ total_revenue|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5>Low Stock Alerts</h5>
+                    <h2>{{ low_stock_products|length }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Orders -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5>Recent Orders</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.customer.username }}</td>
+                                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                <td>£{{ order.total }}</td>
+                                <td>
+                                    <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5">No orders yet</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Stock Products -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5>Low Stock Products</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Stock</th>
+                                <th>Producer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in low_stock_products %}
+                            <tr>
+                                <td>{{ product.name }}</td>
+                                <td class="text-danger">{{ product.stock_quantity }}</td>
+                                <td>{{ product.producer.farm_name }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3">All products have good stock levels</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{% url 'admin:index' %}" class="btn btn-outline-secondary">Go to Django Admin</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Create Recurring Order</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5>Schedule Your Recurring Order</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Order Name</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="e.g., Weekly Veg Box" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="frequency" class="form-label">Frequency</label>
+                            <select class="form-control" id="frequency" name="frequency" required>
+                                <option value="weekly">Weekly</option>
+                                <option value="biweekly">Every 2 Weeks</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="next_delivery_date" class="form-label">First Delivery Date</label>
+                            <input type="date" class="form-control" id="next_delivery_date" 
+                                   name="next_delivery_date" min="{{ min_date|date:'Y-m-d' }}" required>
+                            <small class="text-muted">Minimum 7 days from now</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="instructions" class="form-label">Delivery Instructions</label>
+                            <textarea class="form-control" id="instructions" name="instructions" rows="2"></textarea>
+                        </div>
+                        
+                        <h5>Items in Your Cart</h5>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Subtotal</th>
+                                </thead>
+                                <tbody>
+                                    {% for item in cart.items.all %}
+                                    <tr>
+                                        <td>{{ item.product.name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>£{{ item.product.price }}</td>
+                                        <td>£{{ item.subtotal }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="3">Total:</th>
+                                        <th>£{{ cart.total }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        
+                        <button type="submit" class="btn btn-success">Create Recurring Order</button>
+                        <a href="{% url 'orders:cart' %}" class="btn btn-secondary">Back to Cart</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

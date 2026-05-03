@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="jumbotron bg-light p-5 rounded">
+    <h1 class="display-4">Welcome to Bristol Food Network</h1>
+    <p class="lead">Connect with local producers and enjoy fresh, sustainable food from the Bristol region.</p>
+    <hr class="my-4">
+    <a class="btn btn-success btn-lg" href="{% url 'products:product_list' %}" role="button">Browse Products</a>
+    <a class="btn btn-outline-success btn-lg" href="{% url 'admin:index' %}" role="button">Admin Dashboard</a>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">For Customers</h5>
+                <p class="card-text">Discover fresh, local food from Bristol's best producers.</p>
+                <a href="{% url 'products:product_list' %}" class="btn btn-outline-success">Browse Products</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">For Producers</h5>
+                <p class="card-text">List your products and reach new customers in your area.</p>
+                <a href="{% url 'accounts:register_producer' %}" class="btn btn-outline-success">Register as Producer</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Community Groups</h5>
+                <p class="card-text">Bulk ordering for schools, restaurants, and community organizations.</p>
+                <a href="{% url 'contact' %}" class="btn btn-outline-success">Learn More</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

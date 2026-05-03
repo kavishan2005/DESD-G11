@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="jumbotron bg-light p-5 rounded mb-4">
+    <h1 class="display-4">Welcome to Bristol Food Network</h1>
+    <p class="lead">Connect with local producers and enjoy fresh, sustainable food from the Bristol region.</p>
+    <hr class="my-4">
+    <p>Your local food marketplace is now running!</p>
+    <a class="btn btn-success btn-lg" href="{% url 'products:product_list' %}" role="button">Browse Products</a>
+    <a class="btn btn-outline-success btn-lg" href="{% url 'admin_panel:dashboard' %}" role="button">Admin Panel</a>
+</div>
+
+<!-- Quick Links Cards -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5>Quick Links</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <a href="{% url 'products:product_list' %}" class="text-decoration-none">
+                            <div class="p-3 bg-light rounded">
+                                🛍️ Shop
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'products:surplus_deals' %}" class="text-decoration-none">
+                            <div class="p-3 bg-warning rounded">
+                                🔥 Surplus Deals
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'orders:recurring_orders' %}" class="text-decoration-none">
+                            <div class="p-3 bg-info rounded">
+                                🔄 Recurring Orders
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'orders:order_history' %}" class="text-decoration-none">
+                            <div class="p-3 bg-secondary text-white rounded">
+                                📋 Order History
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Surplus Deals Banner -->
+<div class="row mt-2 mb-4">
+    <div class="col-12">
+        <div class="card bg-warning">
+            <div class="card-body text-center">
+                <h3 class="mb-3">🔥 Surplus Deals</h3>
+                <p class="lead">Save up to 50% on products that need to be sold quickly!</p>
+                <a href="{% url 'products:surplus_deals' %}" class="btn btn-dark btn-lg">View Surplus Deals</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Cards -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">For Customers</h5>
+                <p class="card-text">Discover fresh, local food from Bristol's best producers.</p>
+                <a href="{% url 'products:product_list' %}" class="btn btn-outline-success">Browse Products</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">For Producers</h5>
+                <p class="card-text">List your products and reach new customers in your area.</p>
+                <a href="{% url 'accounts:register_producer' %}" class="btn btn-outline-success">Register as Producer</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Community Groups</h5>
+                <p class="card-text">Bulk ordering for schools, restaurants, and community organizations.</p>
+                <a href="{% url 'contact' %}" class="btn btn-outline-success">Learn More</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

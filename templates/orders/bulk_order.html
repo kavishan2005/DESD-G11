@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>📦 Bulk Order for Community Group</h1>
+    <p class="lead">Place large orders for schools, restaurants, and community organizations.</p>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5>Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="delivery_date" class="form-label">Delivery Date *</label>
+                            <input type="date" class="form-control" id="delivery_date" name="delivery_date" 
+                                   min="{{ min_delivery|date:'Y-m-d' }}" required>
+                            <small class="text-muted">Minimum 48 hours lead time</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="delivery_address" class="form-label">Delivery Address *</label>
+                            <textarea class="form-control" id="delivery_address" name="delivery_address" 
+                                      rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="instructions" class="form-label">Special Instructions</label>
+                            <textarea class="form-control" id="instructions" name="instructions" rows="2"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success">Place Bulk Order</button>
+                        <a href="{% url 'products:product_list' %}" class="btn btn-secondary">Continue Shopping</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5>Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Items in cart ({{ cart.item_count }}):</h6>
+                    {% for item in cart.items.all %}
+                    <div class="d-flex justify-content-between small">
+                        <span>{{ item.product.name }} x{{ item.quantity }}</span>
+                        <span>£{{ item.subtotal }}</span>
+                    </div>
+                    {% empty %}
+                    <p>Your cart is empty</p>
+                    {% endfor %}
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total:</span>
+                        <span>£{{ cart.total }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

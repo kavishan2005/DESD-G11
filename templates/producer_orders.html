@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Incoming Orders</h1>
+
+{% if suborders %}
+    {% for suborder in suborders %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white d-flex justify-content-between">
+            <span>Order #{{ suborder.order.order_number }}</span>
+            <span>Delivery: {{ suborder.delivery_date|date:"M d, Y" }}</span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Customer</h6>
+                    <p>{{ suborder.order.customer.username }}</p>
+                    <p>{{ suborder.order.delivery_address }}</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Your Items</h6>
+                    {% for item in suborder.order.items.all %}
+                        {% if item.producer == suborder.producer %}
+                        <div>{{ item.quantity }} x {{ item.product.name }} - £{{ item.subtotal }}</div>
+                        {% endif %}
+                    {% endfor %}
+                    <hr>
+                    <p><strong>Subtotal:</strong> £{{ suborder.subtotal }}</p>
+                    <p><strong>Your payment (95%):</strong> £{{ suborder.producer_payment }}</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Status</h6>
+                    <form method="post" action="{% url 'orders:update_order_status' suborder.id %}">
+                        {% csrf_token %}
+                        <select name="status" class="form-select mb-2">
+                            <option value="pending" {% if suborder.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="confirmed" {% if suborder.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                            <option value="processing" {% if suborder.status == 'processing' %}selected{% endif %}>Processing</option>
+                            <option value="ready" {% if suborder.status == 'ready' %}selected{% endif %}>Ready for Delivery</option>
+                            <option value="delivered" {% if suborder.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                        </select>
+                        <button type="submit" class="btn btn-success btn-sm">Update Status</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-info">
+        No orders yet.
+    </div>
+{% endif %}
+{% endblock %}

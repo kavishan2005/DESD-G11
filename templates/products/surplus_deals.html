@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">🔥 Surplus Deals</h1>
+    <p class="lead">Great savings on products that need to be sold quickly. Reduce food waste and save money!</p>
+    
+    <div class="row">
+        {% for product in products %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <span class="badge bg-danger">🔥 {{ product.surplus_discount }}% OFF</span>
+                    {% if product.surplus_expiry %}
+                    <small class="float-end">Expires: {{ product.surplus_expiry|date:"M d, H:i" }}</small>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text">{{ product.description|truncatewords:15 }}</p>
+                    
+                    <div class="mb-2">
+                        <span class="text-muted text-decoration-line-through">£{{ product.price }}</span>
+                        <span class="h4 text-danger">£{{ product.discounted_price }}</span>
+                        <small class="text-muted">per {{ product.unit }}</small>
+                    </div>
+                    
+                    {% if product.surplus_note %}
+                    <div class="alert alert-info small py-1">
+                        {{ product.surplus_note }}
+                    </div>
+                    {% endif %}
+                    
+                    <p class="small text-muted">From: {{ product.producer.farm_name }}</p>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{% url 'orders:add_to_cart' product.id %}" class="btn btn-warning w-100">Add to Cart</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h4>No surplus deals available</h4>
+                <p>Check back later for great savings!</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

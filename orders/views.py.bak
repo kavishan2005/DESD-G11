@@ -1,0 +1,469 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .models import Cart, CartItem
+from products.models import Product
+from django.utils import timezone
+from datetime import timedelta
+from accounts.models import Address
+import json
+
+def get_or_create_cart(request):
+    """Get or create a cart for the current user/session"""
+    if request.user.is_authenticated:
+        cart, created = Cart.objects.get_or_create(
+            user=request.user,
+            is_active=True
+        )
+    else:
+        # For anonymous users, use session
+        session_id = request.session.session_key
+        if not session_id:
+            request.session.create()
+            session_id = request.session.session_key
+        
+        cart, created = Cart.objects.get_or_create(
+            session_id=session_id,
+            is_active=True
+        )
+    return cart
+
+def cart_view(request):
+    cart = get_or_create_cart(request)
+    items = cart.items.select_related('product', 'product__producer').all()
+    
+    # Group items by producer
+    producer_items = {}
+    for item in items:
+        producer = item.product.producer
+        if producer not in producer_items:
+            producer_items[producer] = []
+        producer_items[producer].append(item)
+    
+    context = {
+        'cart': cart,
+        'producer_items': producer_items,
+        'total': cart.total,
+        'item_count': cart.item_count,
+    }
+    return render(request, 'orders/cart.html', context)
+
+@require_POST
+def add_to_cart(request):
+    cart = get_or_create_cart(request)
+    product_id = request.POST.get('product_id')
+    quantity = float(request.POST.get('quantity', 1))
+    
+    try:
+        product = Product.objects.get(id=product_id)
+        
+        # Check stock
+        if product.stock_quantity < quantity:
+            return JsonResponse({'error': 'Insufficient stock'}, status=400)
+        
+        # Check if item already exists
+        cart_item, created = CartItem.objects.get_or_create(
+            cart=cart,
+            product=product,
+            defaults={'quantity': quantity}
+        )
+        
+        if not created:
+            cart_item.quantity += quantity
+            cart_item.save()
+        
+        return JsonResponse({
+            'success': True,
+            'cart_count': cart.item_count,
+            'cart_total': float(cart.total)
+        })
+        
+    except Product.DoesNotExist:
+        return JsonResponse({'error': 'Product not found'}, status=404)
+
+@require_POST
+def update_cart_item(request, item_id):
+    cart_item = get_object_or_404(CartItem, id=item_id)
+    data = json.loads(request.body)
+    quantity = float(data.get('quantity', 0))
+    
+    if quantity <= 0:
+        cart_item.delete()
+        message = 'Item removed from cart'
+    else:
+        if quantity > cart_item.product.stock_quantity:
+            return JsonResponse({'error': 'Insufficient stock'}, status=400)
+        
+        cart_item.quantity = quantity
+        cart_item.save()
+        message = 'Cart updated'
+    
+    cart = cart_item.cart
+    
+    return JsonResponse({
+        'success': True,
+        'message': message,
+        'item_subtotal': float(cart_item.subtotal) if quantity > 0 else 0,
+        'cart_total': float(cart.total),
+        'cart_count': cart.item_count
+    })
+
+@require_POST
+def remove_from_cart(request, item_id):
+    cart_item = get_object_or_404(CartItem, id=item_id)
+    cart = cart_item.cart
+    cart_item.delete()
+    
+    return JsonResponse({
+        'success': True,
+        'message': 'Item removed from cart',
+        'cart_total': float(cart.total),
+        'cart_count': cart.item_count
+    })
+    from django.utils import timezone
+from datetime import timedelta
+from .models import Order, OrderItem, SubOrder
+from payments.models import Payment
+
+@login_required
+def checkout(request):
+    cart = get_or_create_cart(request)
+    
+    if not cart.items.exists():
+        messages.warning(request, 'Your cart is empty.')
+        return redirect('orders:cart')
+    
+    # Check if user has addresses
+    addresses = request.user.addresses.all()
+    if not addresses.exists():
+        messages.warning(request, 'Please add a delivery address before checkout.')
+        return redirect('accounts:add_address')
+    
+    # Calculate earliest delivery date for each producer (48h lead time)
+    earliest_dates = {}
+    for item in cart.items.all():
+        producer = item.product.producer
+        lead_time = producer.lead_time_hours
+        earliest = timezone.now() + timedelta(hours=lead_time)
+        if producer not in earliest_dates or earliest > earliest_dates[producer]:
+            earliest_dates[producer] = earliest
+    
+    if request.method == 'POST':
+        address_id = request.POST.get('address')
+        delivery_dates = {}
+        
+        # Get delivery dates for each producer
+        for key, value in request.POST.items():
+            if key.startswith('delivery_date_'):
+                producer_id = key.replace('delivery_date_', '')
+                delivery_dates[int(producer_id)] = value
+        
+        address = get_object_or_404(Address, id=address_id, user=request.user)
+        
+        # Create order
+        order = Order.objects.create(
+            user=request.user,
+            delivery_address=address,
+            delivery_date=min(delivery_dates.values()),  # Earliest date
+            subtotal=cart.total,
+            commission=cart.total * 0.05,
+            total=cart.total * 1.05,
+            status='pending'
+        )
+        
+        # Create order items and suborders
+        for producer, items in cart.get_items_by_producer().items():
+            suborder = SubOrder.objects.create(
+                order=order,
+                producer=producer,
+                delivery_date=delivery_dates.get(producer.id),
+                subtotal=sum(item.subtotal for item in items),
+                commission=sum(item.subtotal for item in items) * 0.05,
+                producer_payment=sum(item.subtotal for item in items) * 0.95
+            )
+            
+            for item in items:
+                OrderItem.objects.create(
+                    order=order,
+                    suborder=suborder,
+                    product=item.product,
+                    producer=producer,
+                    product_name=item.product.name,
+                    quantity=item.quantity,
+                    unit_price=item.product.discounted_price
+                )
+                
+                # Update stock
+                product = item.product
+                product.stock_quantity -= item.quantity
+                product.save()
+        
+        # Clear cart
+        cart.is_active = False
+        cart.save()
+        
+        # Redirect to payment
+        return redirect('payments:process', order_id=order.id)
+    
+    context = {
+        'cart': cart,
+        'addresses': addresses,
+        'producer_dates': earliest_dates,
+        'items_by_producer': cart.get_items_by_producer(),
+    }
+    return render(request, 'orders/checkout.html', context)
+@login_required
+def order_history(request):
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    
+    context = {
+        'orders': orders
+    }
+    return render(request, 'orders/order_history.html', context)
+
+@login_required
+def order_detail(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    context = {
+        'order': order
+    }
+    return render(request, 'orders/order_detail.html', context)
+
+@login_required
+def reorder(request, order_id):
+    old_order = get_object_or_404(Order, id=order_id, user=request.user)
+    cart = get_or_create_cart(request)
+    
+    # Clear existing cart if desired
+    cart.items.all().delete()
+    
+    # Add items from old order
+    for item in old_order.items.all():
+        if item.product and item.product.availability_status in ['in_season', 'available']:
+            CartItem.objects.create(
+                cart=cart,
+                product=item.product,
+                quantity=item.quantity
+            )
+    
+    messages.success(request, 'Items from previous order added to your cart.')
+    return redirect('orders:cart')
+
+# Producer Order Management
+@login_required
+def producer_orders(request):
+    if request.user.user_type != 'producer':
+        messages.error(request, 'Access denied.')
+        return redirect('core:home')
+    
+    producer = request.user.producer
+    suborders = SubOrder.objects.filter(producer=producer).order_by('-delivery_date')
+    
+    context = {
+        'suborders': suborders
+    }
+    return render(request, 'orders/producer_orders.html', context)
+
+@login_required
+def update_order_status(request, suborder_id):
+    if request.user.user_type != 'producer':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    suborder = get_object_or_404(SubOrder, id=suborder_id, producer=request.user.producer)
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        if new_status in dict(Order.ORDER_STATUS):
+            suborder.status = new_status
+            suborder.save()
+            
+            # Update main order status if all suborders have same status
+            all_statuses = set(s.status for s in suborder.order.suborders.all())
+            if len(all_statuses) == 1:
+                suborder.order.status = all_statuses.pop()
+                suborder.order.save()
+            
+            messages.success(request, f'Order status updated to {new_status}')
+    
+    return redirect('orders:producer_orders')
+@login_required
+def checkout(request):
+    """Checkout process - single producer orders (TC-007)"""
+    cart = Cart.objects.get(user=request.user)
+    
+    if cart.items.count() == 0:
+        messages.warning(request, "Your cart is empty.")
+        return redirect('product_list')
+    
+    # Check if multi-producer (for Sprint 3)
+    producers = set(item.product.producer for item in cart.items.all())
+    is_multi_producer = len(producers) > 1
+    
+    if request.method == 'POST':
+        # Get delivery details
+        delivery_date = request.POST.get('delivery_date')
+        delivery_address = request.POST.get('delivery_address', request.user.profile.address)
+        special_instructions = request.POST.get('special_instructions', '')
+        
+        # Validate delivery date (minimum 48 hours)
+        from datetime import timedelta, datetime
+        min_date = datetime.now().date() + timedelta(days=2)
+        selected_date = datetime.strptime(delivery_date, '%Y-%m-%d').date()
+        
+        if selected_date < min_date:
+            messages.error(request, "Delivery date must be at least 48 hours from now.")
+            return redirect('checkout')
+        
+        # Create order
+        order = Order.objects.create(
+            customer=request.user,
+            delivery_date=selected_date,
+            delivery_address=delivery_address,
+            delivery_postcode=request.user.profile.postcode,
+            special_instructions=special_instructions
+        )
+        
+        # Create order items
+        for item in cart.items.all():
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                producer=item.product.producer,
+                quantity=item.quantity,
+                price=item.product.price,
+                subtotal=item.product.price * item.quantity
+            )
+            
+            # Update stock
+            product = item.product
+            product.stock_quantity -= item.quantity
+            product.save()
+        
+        # Calculate totals
+        order.calculate_totals()
+        
+        # Clear cart
+        cart.items.all().delete()
+        
+        messages.success(request, f"Order placed successfully! Order number: {order.order_number}")
+        return redirect('order_detail', order_id=order.id)
+    
+    # Calculate min delivery date
+    from datetime import timedelta, datetime
+    min_delivery_date = (datetime.now() + timedelta(days=2)).date()
+    
+    # Group items by producer for display
+    items_by_producer = {}
+    for item in cart.items.all():
+        producer = item.product.producer
+        if producer not in items_by_producer:
+            items_by_producer[producer] = []
+        items_by_producer[producer].append(item)
+    
+    context = {
+        'cart': cart,
+        'items_by_producer': items_by_producer,
+        'total': cart.get_total(),
+        'min_delivery_date': min_delivery_date.isoformat(),
+        'is_multi_producer': is_multi_producer,
+    }
+    return render(request, 'orders/checkout.html', context)
+
+@login_required
+def order_detail(request, order_id):
+    """View order details (TC-021)"""
+    order = get_object_or_404(Order, id=order_id, customer=request.user)
+    
+    # Group items by producer
+    items_by_producer = {}
+    for item in order.items.all():
+        producer = item.producer
+        if producer not in items_by_producer:
+            items_by_producer[producer] = []
+        items_by_producer[producer].append(item)
+    
+    context = {
+        'order': order,
+        'items_by_producer': items_by_producer,
+    }
+    return render(request, 'orders/order_detail.html', context)
+
+@login_required
+def order_history(request):
+    """Customer order history (TC-021)"""
+    orders = Order.objects.filter(customer=request.user).order_by('-created_at')
+    return render(request, 'orders/order_history.html', {'orders': orders})
+
+@login_required
+def producer_orders(request):
+    """Producer dashboard to view incoming orders (TC-009)"""
+    if request.user.profile.user_type != 'producer':
+        messages.error(request, "Access denied. Producer account required.")
+        return redirect('product_list')
+    
+    # Get all order items for this producer's products
+    order_items = OrderItem.objects.filter(producer=request.user).select_related('order', 'product')
+    
+    # Group by order
+    orders_dict = {}
+    for item in order_items:
+        if item.order.id not in orders_dict:
+            orders_dict[item.order.id] = {
+                'order': item.order,
+                'items': [],
+                'total': 0,
+                'customer': item.order.customer
+            }
+        orders_dict[item.order.id]['items'].append(item)
+        orders_dict[item.order.id]['total'] += item.subtotal
+    
+    orders = list(orders_dict.values())
+    
+    context = {
+        'orders': orders,
+    }
+    return render(request, 'orders/producer_orders.html', context)
+
+@login_required
+def update_order_status(request, order_id):
+    """Update order status (TC-010)"""
+    if request.user.profile.user_type != 'producer':
+        messages.error(request, "Access denied.")
+        return redirect('home')
+    
+    order = get_object_or_404(Order, id=order_id)
+    
+    # Verify this producer has items in this order
+    if not OrderItem.objects.filter(order=order, producer=request.user).exists():
+        messages.error(request, "You don't have items in this order.")
+        return redirect('producer_orders')
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        note = request.POST.get('note', '')
+        
+        # Define valid status transitions
+        valid_transitions = {
+            'pending': ['confirmed', 'cancelled'],
+            'confirmed': ['processing', 'cancelled'],
+            'processing': ['ready', 'cancelled'],
+            'ready': ['completed'],
+            'completed': [],
+            'cancelled': []
+        }
+        
+        if new_status in valid_transitions.get(order.status, []):
+            order.status = new_status
+            order.save()
+            messages.success(request, f"Order status updated to {new_status}.")
+            
+            # Add note if provided (you could create a OrderNote model)
+            if note:
+                messages.info(request, f"Note: {note}")
+        else:
+            messages.error(request, f"Cannot change status from {order.status} to {new_status}.")
+    
+    return redirect('producer_orders')

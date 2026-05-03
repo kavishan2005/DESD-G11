@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4>Register as Producer</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" id="id_username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" id="id_email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_farm_name" class="form-label">Farm Name</label>
+                        <input type="text" name="farm_name" class="form-control" id="id_farm_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_farm_description" class="form-label">Farm Description</label>
+                        <textarea name="farm_description" class="form-control" id="id_farm_description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_phone" class="form-label">Phone Number</label>
+                        <input type="text" name="phone" class="form-control" id="id_phone">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_password1" class="form-label">Password</label>
+                        <input type="password" name="password1" class="form-control" id="id_password1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_password2" class="form-label">Confirm Password</label>
+                        <input type="password" name="password2" class="form-control" id="id_password2" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">Register as Producer</button>
+                </form>
+                
+                <p class="text-center mt-3">
+                    Already have an account? <a href="{% url 'accounts:login' %}">Login here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

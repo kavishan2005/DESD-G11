@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Checkout</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5>Delivery Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="delivery_date" class="form-label">Delivery Date *</label>
+                        <input type="date" class="form-control" id="delivery_date" 
+                               name="delivery_date" min="{{ min_delivery|date:'Y-m-d' }}" required>
+                        <small class="text-muted">Minimum 48 hours from now</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="delivery_address" class="form-label">Delivery Address *</label>
+                        <textarea class="form-control" id="delivery_address" 
+                                  name="delivery_address" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="instructions" class="form-label">Special Instructions</label>
+                        <textarea class="form-control" id="instructions" 
+                                  name="instructions" rows="2"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-lg">Place Order</button>
+                    <a href="{% url 'orders:cart' %}" class="btn btn-secondary btn-lg">Back to Cart</a>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5>Order Summary</h5>
+            </div>
+            <div class="card-body">
+                <h6>Items ({{ cart.item_count }})</h6>
+                {% for item in cart.items.all %}
+                <div class="d-flex justify-content-between small mb-2">
+                    <span>{{ item.product.name }} x{{ item.quantity }}</span>
+                    <span>£{{ item.subtotal }}</span>
+                </div>
+                {% endfor %}
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between">
+                    <span>Subtotal:</span>
+                    <span>£{{ total }}</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted">
+                    <span>Commission (5%):</span>
+                    <span>-£{{ total|floatformat:2|add:"*0.05" }}</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between fw-bold">
+                    <span>Total:</span>
+                    <span>£{{ total|floatformat:2 }}</span>
+                </div>
+                
+                {% if is_multi %}
+                <div class="alert alert-info mt-3">
+                    <small>This order contains items from {{ producers|length }} producers. They will be delivered separately if dates differ.</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

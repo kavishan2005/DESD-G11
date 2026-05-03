@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h1 class="text-center mb-4">Join Bristol Food Network</h1>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">Customer</h3>
+                        <p class="card-text">Shop for fresh, local food from Bristol's best producers.</p>
+                        <ul class="text-start mb-4">
+                            <li>Browse products by category</li>
+                            <li>Save your favourite producers</li>
+                            <li>Track your order history</li>
+                            <li>Leave reviews</li>
+                        </ul>
+                        <a href="{% url 'accounts:register_customer' %}" class="btn btn-success">Register as Customer</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">Producer</h3>
+                        <p class="card-text">List your products and reach customers in your area.</p>
+                        <ul class="text-start mb-4">
+                            <li>Create product listings</li>
+                            <li>Manage inventory</li>
+                            <li>View incoming orders</li>
+                            <li>Update order status</li>
+                        </ul>
+                        <a href="{% url 'accounts:register_producer' %}" class="btn btn-success">Register as Producer</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p class="text-center mt-4">
+            Already have an account? <a href="{% url 'accounts:login' %}">Login here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Products</a></li>
+                <li class="breadcrumb-item"><a href="?category={{ product.category.id }}">{{ product.category.name }}</a></li>
+                <li class="breadcrumb-item active">{{ product.name }}</li>
+            </ol>
+        </nav>
+        
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4>{{ product.name }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Description</h5>
+                        <p>{{ product.description }}</p>
+                        
+                        <h5>Price</h5>
+                        <p class="h3 text-success">
+                            £{{ product.discounted_price }} 
+                            <small class="text-muted">per {{ product.unit }}</small>
+                        </p>
+                        
+                        {% if product.is_surplus %}
+                        <div class="alert alert-warning">
+                            <strong>🔥 Surplus Deal!</strong> 
+                            {{ product.surplus_discount }}% off - 
+                            Expires: {{ product.surplus_expiry|date:"M d, Y" }}
+                        </div>
+                        {% endif %}
+                        
+                        <h5>Stock Available</h5>
+                        <p>
+                            {% if product.stock_quantity > 10 %}
+                                <span class="text-success">{{ product.stock_quantity }} units</span>
+                            {% elif product.stock_quantity > 0 %}
+                                <span class="text-warning">Only {{ product.stock_quantity }} left - Order soon!</span>
+                            {% else %}
+                                <span class="text-danger">Out of Stock</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Producer</h5>
+                        <p>{{ product.producer.farm_name }}</p>
+                        <p><small>{{ product.producer.farm_description|truncatewords:30 }}</small></p>
+                        
+                        <h5>Category</h5>
+                        <p>{{ product.category.name }}</p>
+                        
+                        <h5>Attributes</h5>
+                        <p>
+                            {% if product.organic_certified %}
+                            <span class="badge bg-success">Organic Certified</span>
+                            {% endif %}
+                            <span class="badge bg-info">{{ product.get_availability_status_display }}</span>
+                            {% if product.season_start_month %}
+                            <span class="badge bg-secondary">Season: {{ product.get_season_display }}</span>
+                            {% endif %}
+                        </p>
+                        
+                        {% if product.allergen_info %}
+                        <h5>Allergen Information</h5>
+                        <div class="alert alert-danger">
+                            <strong>⚠️ Contains:</strong> {{ product.allergen_info }}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-success">
+                            <strong>✅ No allergens declared</strong>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Food miles would go here -->
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <form method="post" action="{% url 'orders:add_to_cart' product.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <input type="number" name="quantity" value="1" min="1" 
+                                       max="{{ product.stock_quantity }}" 
+                                       class="form-control" {% if product.unit == 'each' %}step="1"{% else %}step="0.5"{% endif %}>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-success" {% if product.stock_quantity <= 0 %}disabled{% endif %}>
+                                    Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    <a href="{% url 'products:product_list' %}" class="btn btn-secondary mt-2">Back to Products</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if product.allergen_info %}
+<div class="alert alert-danger mt-3">
+    <strong>⚠️ Allergen Information:</strong> {{ product.allergen_info }}
+</div>
+{% else %}
+<div class="alert alert-success mt-3">
+    <strong>✅ No allergens declared</strong>
+</div>
+{% endif %}
+{% endblock %}

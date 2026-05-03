@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Notifications {% if unread_count > 0 %}<span class="badge bg-danger">{{ unread_count }}</span>{% endif %}</h1>
+        <a href="{% url 'notifications:mark_all_read' %}" class="btn btn-sm btn-secondary">Mark All Read</a>
+    </div>
+    
+    {% if notifications %}
+        <div class="list-group">
+            {% for notification in notifications %}
+            <div class="list-group-item {% if not notification.is_read %}list-group-item-warning{% endif %}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="mb-1">{{ notification.title }}</h5>
+                        <p class="mb-1">{{ notification.message }}</p>
+                        <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                    </div>
+                    {% if not notification.is_read %}
+                    <a href="{% url 'notifications:mark_as_read' notification.id %}" class="btn btn-sm btn-primary">Mark Read</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <h4>No notifications</h4>
+            <p>You're all caught up!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

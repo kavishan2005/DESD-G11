@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Recurring Orders</h1>
+        <a href="{% url 'orders:create_recurring_order' %}" class="btn btn-success">Create New</a>
+    </div>
+    
+    {% if recurring_orders %}
+        <div class="row">
+            {% for recurring in recurring_orders %}
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex justify-content-between">
+                            <h5>{{ recurring.name }}</h5>
+                            <span class="badge bg-light text-dark">{{ recurring.get_frequency_display }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Next Delivery:</strong> {{ recurring.next_delivery_date|date:"M d, Y" }}</p>
+                        <p><strong>Items:</strong></p>
+                        <ul>
+                            {% for item in recurring.items.all %}
+                            <li>{{ item.quantity }} x {{ item.product.name }} - £{{ item.subtotal }}</li>
+                            {% endfor %}
+                        </ul>
+                        <hr>
+                        <p><strong>Instructions:</strong> {{ recurring.delivery_instructions|default:"None" }}</p>
+                        <a href="{% url 'orders:cancel_recurring_order' recurring.id %}" class="btn btn-danger btn-sm">Cancel</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <h4>No recurring orders</h4>
+            <p>Create a recurring order to have your favourites delivered regularly.</p>
+            <a href="{% url 'orders:create_recurring_order' %}" class="btn btn-success">Create Recurring Order</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

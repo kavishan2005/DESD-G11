@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4>Edit Profile</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="id_postcode" class="form-label">Postcode</label>
+                        <input type="text" name="postcode" class="form-control" id="id_postcode" 
+                               value="{{ user.profile.postcode }}" placeholder="e.g., BS1 5JG">
+                        <small class="text-muted">Used to calculate food miles</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_phone" class="form-label">Phone</label>
+                        <input type="text" name="phone" class="form-control" id="id_phone" 
+                               value="{{ user.profile.phone }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_address" class="form-label">Address</label>
+                        <textarea name="address" class="form-control" id="id_address" rows="3">{{ user.profile.address }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">Update Profile</button>
+                    <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

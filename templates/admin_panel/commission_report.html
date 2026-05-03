@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">💰 Commission Report</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5>Total Orders</h5>
+                    <h2>{{ total_orders }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Total Revenue</h5>
+                    <h2>£{{ total_revenue|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>Commission (5%)</h5>
+                    <h2>£{{ total_commission|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5>Avg Order Value</h5>
+                    <h2>£{{ avg_order_value|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5>Monthly Summary</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Orders</th>
+                        <th>Revenue</th>
+                        <th>Commission</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for month in monthly_summary %}
+                    <tr>
+                        <td>{{ month.month }}</td>
+                        <td>{{ month.count }}</td>
+                        <td>£{{ month.revenue|floatformat:2 }}</td>
+                        <td>£{{ month.commission|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No data available</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5>Recent Orders</h5>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Subtotal</th>
+                        <th>Commission</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td>{{ order.order_number }}</td>
+                        <td>{{ order.customer.username }}</td>
+                        <td>{{ order.created_at|date:"M d, Y" }}</td>
+                        <td>£{{ order.subtotal }}</td>
+                        <td>£{{ order.commission }}</td>
+                        <td><strong>£{{ order.total }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6">No orders yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

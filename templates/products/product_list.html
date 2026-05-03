@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <!-- Sidebar with categories -->
+    <div class="col-md-3">
+        <h4>Categories</h4>
+        <ul class="list-group mb-4">
+            <li class="list-group-item {% if not selected_category %}active{% endif %}">
+                <a href="{% url 'products:product_list' %}" class="text-decoration-none text-dark">All Products</a>
+            </li>
+            {% for category in categories %}
+            <li class="list-group-item {% if selected_category == category.id %}active{% endif %}">
+                <a href="?category={{ category.id }}" class="text-decoration-none text-dark">{{ category.name }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+        
+        <!-- Organic filter -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5>Filters</h5>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    {% if selected_category %}
+                    <input type="hidden" name="category" value="{{ selected_category }}">
+                    {% endif %}
+                    {% if search_query %}
+                    <input type="hidden" name="q" value="{{ search_query }}">
+                    {% endif %}
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="organic" id="organicFilter" 
+                               {% if organic_filter %}checked{% endif %}>
+                        <label class="form-check-label" for="organicFilter">
+                            Organic Certified Only
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-sm mt-3 w-100">Apply Filters</button>
+                    <a href="{% url 'products:product_list' %}" class="btn btn-secondary btn-sm mt-2 w-100">Clear Filters</a>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main content -->
+    <div class="col-md-9">
+        <!-- Search bar -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <form method="get" class="d-flex">
+                    {% if selected_category %}
+                    <input type="hidden" name="category" value="{{ selected_category }}">
+                    {% endif %}
+                    {% if organic_filter %}
+                    <input type="hidden" name="organic" value="on">
+                    {% endif %}
+                    
+                    <input type="text" name="q" class="form-control me-2" 
+                           placeholder="Search products..." value="{{ search_query }}">
+                    <button type="submit" class="btn btn-success">Search</button>
+                </form>
+            </div>
+        </div>
+        
+        <h1 class="mb-4">Our Products</h1>
+        
+        <!-- Debug info - remove in production -->
+        <div class="alert alert-info">
+            <strong>Debug:</strong> Total products in database: {{ products.count }}
+        </div>
+        
+        <!-- Products display -->
+        {% if products %}
+            <div class="row">
+                {% for product in products %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text text-muted">{{ product.description|truncatewords:15 }}</p>
+                            
+                            <!-- Badges -->
+                            <div class="mb-2">
+                                {% if product.organic_certified %}
+                                <span class="badge bg-success">Organic</span>
+                                {% endif %}
+                                {% if product.availability_status == 'in_season' %}
+                                <span class="badge bg-info">In Season</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Price -->
+                            <p class="card-text">
+                                <strong class="text-success">£{{ product.price }}</strong> 
+                                <small class="text-muted">per {{ product.unit }}</small>
+                            </p>
+                            
+                            <!-- Producer -->
+                            <p class="card-text">
+                                <small class="text-muted">From: {{ product.producer.farm_name }}</small>
+                            </p>
+                            
+                            <!-- Stock -->
+                            {% if product.stock_quantity < 10 %}
+                            <p class="card-text">
+                                <small class="text-warning">Only {{ product.stock_quantity }} left!</small>
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="{% url 'products:product_detail' product.slug %}" class="btn btn-sm btn-outline-primary">View Details</a>
+                            <a href="{% url 'orders:add_to_cart' product.id %}" class="btn btn-sm btn-success">Add to Cart</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                <h4 class="alert-heading">No Products Found!</h4>
+                <p>There are no products matching your criteria. Please try different filters or check back later.</p>
+                <hr>
+                <p class="mb-0">
+                    <a href="{% url 'admin:index' %}" class="btn btn-primary">Go to Admin Panel to Add Products</a>
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

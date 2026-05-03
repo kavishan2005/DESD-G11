@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">📊 Admin Dashboard</h1>
+    
+    <!-- Stats Cards Row 1 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5>👥 Total Users</h5>
+                    <h2>{{ total_users }}</h2>
+                    <small>{{ total_producers }} Producers | {{ total_customers }} Customers</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>📦 Total Orders</h5>
+                    <h2>{{ total_orders }}</h2>
+                    <small>{{ pending_orders }} Pending</small>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5>Reports</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'admin_panel:commission_report' %}" class="btn btn-primary">💰 Commission Report</a>
+            </div>
+        </div>
+    </div>
+</div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>💰 Revenue</h5>
+                    <h2>£{{ total_revenue|floatformat:2 }}</h2>
+                    <small>Commission: £{{ total_commission|floatformat:2 }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5>✅ Completed</h5>
+                    <h2>{{ completed_orders }}</h2>
+                    <small>Orders delivered</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards Row 2 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <h5>🛒 Products</h5>
+                    <h2>{{ total_products }}</h2>
+                    <small>{{ active_products }} Active</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <h5>🌾 Producers</h5>
+                    <h2>{{ total_producers_count }}</h2>
+                    <small>{{ active_producers }} Active</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5>❌ Cancelled</h5>
+                    <h2>{{ cancelled_orders }}</h2>
+                    <small>Orders cancelled</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>✅ Active Products</h5>
+                    <h2>{{ active_products }}</h2>
+                    <small>Available for sale</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Orders -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5>📋 Recent Orders</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>{{ order.order_number }}</td>
+                                    <td>{{ order.customer.username }}</td>
+                                    <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                    <td>£{{ order.total }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5">No orders yet</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Stock Products & Recent Users -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5>⚠️ Low Stock Products</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr><th>Product</th><th>Stock</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for product in low_stock %}
+                                <tr>
+                                    <td>{{ product.name }}</td>
+                                    <td class="text-danger">{{ product.stock_quantity }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="2">All products have good stock</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5>🆕 Recent Users</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr><th>Username</th><th>Type</th><th>Joined</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for user in recent_users %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.profile.user_type|title }}</td>
+                                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3">No users yet</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4 text-center">
+        <small class="text-muted">Custom Admin Panel - Complete Dashboard</small>
+    </div>
+</div>
+{% endblock %}
